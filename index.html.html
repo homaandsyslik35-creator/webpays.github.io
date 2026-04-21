@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>WebPay — Криптокошелёк</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 20% 30%, #0a0f1e, #03060c);
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        body.light { background: #f0f2f5; }
+        body.light .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 25px 45px rgba(0, 0, 0, 0.1); }
+        body.light .logo h1 { background: linear-gradient(135deg, #1a2a6c, #b21f1f); -webkit-background-clip: text; background-clip: text; }
+        body.light .step-title, body.light label, body.light .action-title, body.light .balance-amount, body.light .menu-item span, body.light .settings-label, body.light .history-item, body.light .crypto-row span { color: #1a1a2e; }
+        body.light input, body.light select { background: rgba(255, 255, 255, 0.9); color: #1a1a2e; border-color: #ccc; }
+
+        .welcome-container { max-width: 600px; width: 100%; margin: 0 auto; }
+        .glass-card { background: rgba(6, 12, 24, 0.65); backdrop-filter: blur(12px); border-radius: 2rem; padding: 1.5rem; box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 255, 255, 0.1); border: 1px solid rgba(0, 230, 250, 0.25); transition: all 0.2s ease; }
+        .logo { text-align: center; margin-bottom: 1rem; }
+        .logo h1 { font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #ffffff, #5bc0ff, #00f2ff); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 12px rgba(0, 242, 255, 0.4); }
+        .step-badge { display: inline-block; background: rgba(0, 230, 250, 0.15); padding: 0.25rem 1rem; border-radius: 40px; font-size: 0.7rem; color: #7efff0; border: 1px solid rgba(42, 255, 223, 0.4); }
+        .step-title { font-size: 1.2rem; font-weight: 600; color: #ffffff; margin: 0.5rem 0 0.2rem; text-align: center; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-size: 0.8rem; font-weight: 500; color: #ffffff; margin-bottom: 0.4rem; }
+        input, select { width: 100%; background: rgba(2, 8, 18, 0.7); border: 1px solid rgba(0, 210, 210, 0.4); border-radius: 1.2rem; padding: 0.8rem 1rem; font-size: 1rem; color: #ffffff; font-family: inherit; outline: none; }
+        input:focus { border-color: #2affdf; box-shadow: 0 0 0 2px rgba(42, 255, 223, 0.2); }
+        .error-message { font-size: 0.7rem; color: #ff6b8b; margin-top: 0.3rem; margin-left: 0.5rem; }
+        .buttons-row { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; }
+        .btn-secondary { background: rgba(20, 30, 50, 0.8); border: 1px solid rgba(0, 210, 210, 0.5); color: #ffffff; font-size: 0.9rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 3rem; cursor: pointer; text-align: center; transition: 0.2s; }
+        .btn-secondary:hover { background: rgba(42, 255, 223, 0.2); border-color: #2affdf; }
+        .btn-primary { background: linear-gradient(95deg, #0c1b2f, #041a2e); border: 1px solid #2affdf; color: #ffffff; font-size: 0.9rem; font-weight: 600; padding: 0.6rem 1.2rem; border-radius: 3rem; cursor: pointer; text-align: center; transition: 0.2s; }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 0 12px #2affdf; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .card-preview { background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d); border-radius: 1.2rem; padding: 1rem; margin: 1rem 0; color: white; box-shadow: 0 15px 25px rgba(0,0,0,0.3); transition: background 0.3s ease; aspect-ratio: 16 / 10; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .card-tariff { background: rgba(0,0,0,0.4); padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: bold; backdrop-filter: blur(4px); }
+        .card-number { font-size: 1rem; letter-spacing: 1px; font-family: monospace; margin: 0.5rem 0; }
+        .color-palette { display: flex; gap: 12px; justify-content: center; margin: 1rem 0; flex-wrap: wrap; }
+        .color-circle { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(255,255,255,0.5); transition: transform 0.2s; }
+        .tariff-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 1rem 0; }
+        .tariff-btn { background: rgba(2, 8, 18, 0.7); border: 1px solid rgba(0, 210, 210, 0.4); padding: 0.4rem 0.8rem; border-radius: 2rem; color: #ffffff; cursor: pointer; font-size: 0.8rem; }
+        .tariff-btn.active { background: #2affdf; color: #03060c; box-shadow: 0 0 10px #2affdf; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 0.7rem 0; }
+        .checkbox-group label { margin: 0; font-size: 0.8rem; color: #ffffff; }
+        .checkbox-group input { width: 20px; height: 20px; margin: 0; accent-color: #2affdf; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: rgba(6, 12, 24, 0.95); border: 1px solid #2affdf; border-radius: 2rem; padding: 1.5rem; text-align: center; max-width: 320px; width: 85%; color: white; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(42,255,223,0.3); border-top: 4px solid #2affdf; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 1rem auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .check-animation { width: 60px; height: 60px; margin: 1rem auto; }
+        .check-animation svg { width: 100%; height: 100%; }
+        .check-circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 2; stroke: #2affdf; fill: none; animation: strokeDraw 0.5s forwards; }
+        .check-mark { stroke-dasharray: 48; stroke-dashoffset: 48; stroke-width: 3; stroke: #2affdf; fill: none; animation: strokeDraw 0.4s 0.3s forwards; }
+        .cross-mark { stroke-dasharray: 48; stroke-dashoffset: 48; stroke-width: 3; stroke: #ff4d6d; fill: none; animation: strokeDraw 0.4s 0.3s forwards; }
+        @keyframes strokeDraw { to { stroke-dashoffset: 0; } }
+        .fade-in { animation: fadeSlideUp 0.35s ease-out; }
+        @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(15px);} to { opacity: 1; transform: translateY(0);} }
+        .action-card { cursor: pointer; background: rgba(2, 8, 18, 0.8); border-radius: 1.5rem; padding: 0.8rem; text-align: center; }
+        .neon-icon svg { width: 45px; height: 45px; filter: drop-shadow(0 0 4px cyan); }
+        .action-title { color: #ffffff; font-weight: 600; margin: 0.3rem 0; font-size: 0.9rem; }
+        .action-desc { color: #bbd4ff; font-size: 0.65rem; }
+        .logo-sub { color: #ffffff; text-align: center; font-size: 0.75rem; }
+        /* Банк меню */
+        .bank-header { display: flex; justify-content: flex-end; margin-bottom: 0.8rem; }
+        .menu-icon-btn { font-size: 1.5rem; cursor: pointer; padding: 0.4rem; background: rgba(42,255,223,0.2); border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; color: white; }
+        .menu-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.6rem; margin: 1rem 0; }
+        .menu-item { text-align: center; cursor: pointer; padding: 0.4rem; border-radius: 0.8rem; transition: 0.2s; }
+        .menu-item:hover { background: rgba(42, 255, 223, 0.2); }
+        .menu-icon { font-size: 1.5rem; }
+        .menu-item span { display: block; font-size: 0.6rem; margin-top: 0.2rem; color: #ffffff; }
+        .balance { text-align: center; margin: 0.8rem 0; }
+        .balance-label { font-size: 0.75rem; opacity: 0.7; color: #ffffff; }
+        .balance-amount { font-size: 1.8rem; font-weight: bold; color: #ffffff; }
+        .bank-card { background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d); border-radius: 1.2rem; padding: 1rem; margin-bottom: 0.8rem; color: white; }
+        .settings-row { display: flex; justify-content: space-between; align-items: center; margin: 0.8rem 0; padding: 0.4rem 0; border-bottom: 1px solid rgba(42,255,223,0.3); }
+        .settings-label { color: #ffffff; font-size: 0.9rem; }
+        .theme-switch { width: 45px; height: 22px; background: #2affdf; border-radius: 30px; position: relative; cursor: pointer; }
+        .theme-switch::after { content: ''; width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 3px; transition: 0.2s; }
+        body.light .theme-switch::after { left: 24px; }
+        .currency-select { background: rgba(2,8,18,0.7); border-radius: 1rem; padding: 0.3rem 0.6rem; color: white; border: 1px solid #2affdf; font-size: 0.8rem; }
+        .two-buttons { display: flex; gap: 1rem; margin-top: 1rem; }
+        .btn-small { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+        .crypto-list { margin-top: 1rem; border-top: 1px solid rgba(42,255,223,0.3); padding-top: 0.8rem; }
+        .crypto-row { display: flex; justify-content: space-between; padding: 0.4rem 0; color: #ffffff; font-size: 0.75rem; }
+        .history-list { max-height: 300px; overflow-y: auto; margin-top: 1rem; }
+        .history-item { color: #ffffff; padding: 0.5rem; border-bottom: 1px solid rgba(42,255,223,0.2); font-size: 0.75rem; }
+        .gp-modal { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 20px 20px 0 0; padding: 1.2rem; z-index: 1001; animation: slideUp 0.3s ease; color: #1a1a2e; text-align: center; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .gp-amount { font-size: 1.5rem; font-weight: bold; margin: 0.3rem 0; }
+        .gp-btn { background: #1a73e8; color: white; border: none; padding: 0.8rem; border-radius: 2rem; width: 100%; font-size: 0.9rem; font-weight: bold; margin-top: 0.8rem; cursor: pointer; }
+        /* Бегунок для терминала */
+        .runner-container { text-align: center; padding: 2rem 1rem; }
+        .runner { width: 80%; height: 4px; background: rgba(255,255,255,0.3); margin: 2rem auto; position: relative; border-radius: 4px; overflow: hidden; }
+        .runner-ball { width: 30px; height: 4px; background: white; position: absolute; border-radius: 4px; animation: run 1.5s ease-in-out infinite; }
+        @keyframes run { 0% { left: 0; } 50% { left: calc(100% - 30px); } 100% { left: 0; } }
+        /* Мобильная адаптация */
+        @media (max-width: 480px) {
+            body { padding: 0.8rem; }
+            .glass-card { padding: 1rem; border-radius: 1.5rem; }
+            .logo h1 { font-size: 2rem; }
+            .menu-grid { gap: 0.4rem; }
+            .menu-icon { font-size: 1.2rem; }
+            .menu-item span { font-size: 0.55rem; }
+            .bank-card .card-number { font-size: 0.85rem; }
+            .balance-amount { font-size: 1.5rem; }
+            .btn-primary, .btn-secondary { padding: 0.5rem 1rem; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="welcome-container" id="app"></div>
+
+<script>
+    // ======================== ГЛОБАЛЬНОЕ СОСТОЯНИЕ ========================
+    let userData = {
+        firstName: '', lastName: '', patronymic: '', birthDate: '', city: '', address: '',
+        passportCode: '', issueDate: '', expiryDate: '', passportPhoto: null, agreeTerms: false,
+        cardColor: 'grad1', tariff: 'A', consents: { insurance: false, marketing: false, cardIssue: false },
+        pinCode: ''
+    };
+    
+    let currentUser = null;
+    let isLoggedIn = false;
+    let currentCurrency = 'BYN';
+    let allUsers = [];
+    let transactions = [];
+    const exchangeRates = { BYN: 1, USD: 3.2, EUR: 3.5 };
+    const cryptoPrices = { BTC: 65000, ETH: 3200, TON: 5.5, USDT: 1, BNB: 580, SOL: 140, ADA: 0.45, DOGE: 0.12, MATIC: 0.7, TRX: 0.11 };
+    const cryptoList = ['BTC', 'ETH', 'TON', 'USDT', 'BNB', 'SOL', 'ADA', 'DOGE', 'MATIC', 'TRX'];
+    
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+    function saveCurrentUser() { if(currentUser) { localStorage.setItem('webpay_user', JSON.stringify(currentUser)); saveAllUsers(); saveTransactions(); } }
+    function saveAllUsers() { localStorage.setItem('webpay_all_users', JSON.stringify(allUsers)); }
+    function loadAllUsers() { const saved = localStorage.getItem('webpay_all_users'); if(saved) allUsers = JSON.parse(saved); else allUsers = []; }
+    function saveTransactions() { if(currentUser) localStorage.setItem(`webpay_tx_${currentUser.rawNumber}`, JSON.stringify(transactions)); }
+    function loadTransactions() { if(currentUser) { const saved = localStorage.getItem(`webpay_tx_${currentUser.rawNumber}`); if(saved) transactions = JSON.parse(saved); else transactions = []; } }
+    function addTransaction(type, amount, details) { transactions.unshift({ type, amount, details, date: new Date().toLocaleString() }); saveTransactions(); }
+    
+    function generateNewCard(userName, tariff, color) {
+        const random9 = '9' + Math.floor(Math.random() * 100000000000000).toString().padStart(15, '0').slice(0, 15);
+        const formattedCard = random9.match(/.{1,4}/g).join(' ');
+        const expiryDate = `12/${(new Date().getFullYear() + 4).toString().slice(2)}`;
+        const cvv = Math.floor(Math.random() * 900 + 100).toString();
+        return { rawNumber: random9, cardNumber: formattedCard, expiry: expiryDate, cvv: cvv, balance: 0, pinCode: '1234', tariff: tariff || 'A', cardColor: color || 'grad1', userName: userName || 'Владелец' };
+    }
+    
+    const gradients = { grad1: 'linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d)', grad2: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)', grad3: 'linear-gradient(135deg, #42275a, #734b6d)', grad4: 'linear-gradient(135deg, #232526, #414345)', grad5: 'linear-gradient(135deg, #3a1c71, #d76d77, #ffaf7b)', grad6: 'linear-gradient(135deg, #00b4db, #0083b0)' };
+    
+    function showStyledResult(success, message, callback) {
+        const modal = document.createElement('div'); modal.className = 'modal-overlay';
+        modal.innerHTML = `<div class="modal-content" id="resultModal"><div class="spinner" id="resultSpinner"></div><p id="resultText" style="color:#ffffff;">${message}</p></div>`;
+        document.body.appendChild(modal);
+        setTimeout(() => {
+            const spinner = document.getElementById('resultSpinner');
+            const text = document.getElementById('resultText');
+            if(spinner) {
+                spinner.style.animation = 'none';
+                spinner.style.border = 'none';
+                if(success) {
+                    spinner.innerHTML = `<div class="check-animation"><svg viewBox="0 0 60 60"><circle class="check-circle" cx="30" cy="30" r="28" stroke="#2affdf" stroke-width="2"/><path class="check-mark" d="M20 30 L28 38 L42 22" stroke="#2affdf" stroke-width="3"/></svg></div>`;
+                    text.innerText = message || 'Успешно!';
+                } else {
+                    spinner.innerHTML = `<div class="check-animation"><svg viewBox="0 0 60 60"><circle class="check-circle" cx="30" cy="30" r="28" stroke="#ff4d6d" stroke-width="2"/><path class="cross-mark" d="M22 22 L38 38 M38 22 L22 38" stroke="#ff4d6d" stroke-width="3"/></svg></div>`;
+                    text.innerText = message || 'Ошибка!';
+                }
+                setTimeout(() => { modal.remove(); if(callback) callback(); }, 1500);
+            }
+        }, 1500);
+    }
+    
+    // ОПЛАТА ПО ТЕРМИНАЛУ
+    function showTerminalPayment() {
+        document.getElementById('app').innerHTML = `
+            <div class="glass-card fade-in">
+                <div class="bank-header"><div class="menu-icon-btn" id="backBankBtn">←</div></div>
+                <h3 style="color:#ffffff; text-align:center;">Оплата по терминалу</h3>
+                <div class="runner-container">
+                    <p style="color:#ffffff;">Ожидаем терминал...</p>
+                    <div class="runner"><div class="runner-ball"></div></div>
+                    <button class="btn-primary" id="simulateNfc" style="margin-top:2rem;">Имитировать NFC касание</button>
+                </div>
+            </div>`;
+        document.getElementById('backBankBtn').onclick = () => renderMainBank();
+        document.getElementById('simulateNfc').onclick = () => {
+            const modal = document.createElement('div'); modal.className = 'modal-overlay';
+            modal.innerHTML = `<div class="modal-content"><div class="spinner"></div><p style="color:#ffffff;">Обработка оплаты...</p></div>`;
+            document.body.appendChild(modal);
+            setTimeout(() => {
+                modal.innerHTML = `<div class="modal-content"><div class="check-animation"><svg viewBox="0 0 60 60"><circle class="check-circle" cx="30" cy="30" r="28" stroke="#2affdf" stroke-width="2"/><path class="check-mark" d="M20 30 L28 38 L42 22" stroke="#2affdf" stroke-width="3"/></svg></div><p style="color:#2affdf;">Оплата прошла успешно!</p></div>`;
+                setTimeout(() => { modal.remove(); renderMainBank(); }, 1500);
+            }, 1500);
+        };
+    }
+    
+    // ======================== ОСНОВНОЙ ЭКРАН БАНКА ========================
+    function renderMainBank() {
+        if(!isLoggedIn || !currentUser) { renderWelcome(); return; }
+        const symbol = currentCurrency === 'BYN' ? 'BYN' : (currentCurrency === 'USD' ? '$' : '€');
+        const convertedBalance = (currentUser.balance / exchangeRates[currentCurrency]).toFixed(2);
+        document.getElementById('app').innerHTML = `
+            <div class="glass-card fade-in">
+                <div class="bank-header"><div class="menu-icon-btn" id="settingsMenuBtn">☰</div></div>
+                <div class="bank-card" style="background: ${gradients[currentUser.cardColor]}"><div style="display:flex; justify-content:space-between;"><span style="color:#ffffff;">WebPay</span><span style="color:#ffffff;">${currentUser.tariff}</span></div><div class="card-number" style="color:#ffffff;">${currentUser.cardNumber}</div><div style="display:flex; justify-content:space-between;"><span style="color:#ffffff;">Срок: ${currentUser.expiry}</span><span style="color:#ffffff;">CVV: ***</span></div></div>
+                <div class="balance"><div class="balance-label" style="color:#ffffff;">Доступно</div><div class="balance-amount" style="color:#ffffff;">${convertedBalance} ${symbol}</div></div>
+                <div class="menu-grid"><div class="menu-item" id="terminalBtn"><div class="menu-icon">📟</div><span>Терминал</span></div><div class="menu-item" id="transferBtn"><div class="menu-icon">↔️</div><span>Перевод</span></div><div class="menu-item" id="topupBtn"><div class="menu-icon">+</div><span>Пополнить</span></div><div class="menu-item" id="withdrawBtn"><div class="menu-icon">📤</div><span>Вывод</span></div><div class="menu-item" id="historyBtn"><div class="menu-icon">🕒</div><span>История</span></div><div class="menu-item" id="cardDetailsBtn"><div class="menu-icon">💳</div><span>Данные карты</span></div></div>
+                <div class="crypto-list"><div style="margin-bottom:0.5rem; font-size:0.7rem; opacity:0.7; color:#ffffff;">Курсы криптовалют (USD)</div>${cryptoList.map(c => `<div class="crypto-row"><span style="color:#ffffff;">${c}</span><span style="color:#ffffff;">$${cryptoPrices[c].toLocaleString()}</span></div>`).join('')}</div>
+            </div>`;
+        document.getElementById('settingsMenuBtn').onclick = () => showSettingsPanel();
+        document.getElementById('terminalBtn').onclick = () => showTerminalPayment();
+        document.getElementById('transferBtn').onclick = () => showTransferModal();
+        document.getElementById('topupBtn').onclick = () => showGooglePayModal();
+        document.getElementById('withdrawBtn').onclick = () => showWithdrawModal();
+        document.getElementById('historyBtn').onclick = () => showHistoryPanel();
+        document.getElementById('cardDetailsBtn').onclick = () => requestPinForCardDetails();
+    }
+    
+    function showWithdrawModal() {
+        const modal = document.createElement('div'); modal.className = 'modal-overlay';
+        modal.innerHTML = `<div class="modal-content"><h3 style="color:#ffffff;">Вывод в криптокошелёк</h3><select id="cryptoSelectWithdraw">${cryptoList.map(c => `<option value="${c}">${c}</option>`).join('')}</select><input type="number" id="cryptoAmountWithdraw" placeholder="Количество"><div class="two-buttons"><button class="btn-primary" id="confirmWithdraw">Вывести</button><button class="btn-secondary" id="cancelWithdraw">Отмена</button></div></div>`;
+        document.body.appendChild(modal);
+        document.getElementById('confirmWithdraw').onclick = () => {
+            const selectedCrypto = document.getElementById('cryptoSelectWithdraw').value;
+            const amountCrypto = parseFloat(document.getElementById('cryptoAmountWithdraw').value);
+            if(isNaN(amountCrypto) || amountCrypto <= 0) { showStyledResult(false, 'Введите корректную сумму'); modal.remove(); return; }
+            const costInUSD = amountCrypto * cryptoPrices[selectedCrypto];
+            const costInBYN = costInUSD * exchangeRates.USD;
+            if(currentUser.balance < costInBYN) { showStyledResult(false, 'Недостаточно средств'); modal.remove(); return; }
+            currentUser.balance -= costInBYN;
+            saveCurrentUser();
+            addTransaction('Вывод', -costInBYN, `Вывод ${amountCrypto} ${selectedCrypto}`);
+            modal.remove();
+            showStyledResult(true, `Выведено ${amountCrypto} ${selectedCrypto}`, () => renderMainBank());
+        };
+        document.getElementById('cancelWithdraw').onclick = () => modal.remove();
+    }
+    
+    function showSettingsPanel() {
+        document.getElementById('app').innerHTML = `
+            <div class="glass-card fade-in"><div class="bank-header"><div class="menu-icon-btn" id="backBankBtn">←</div></div><h3 style="color:#ffffff; text-align:center;">Настройки</h3>
+            <div class="settings-row"><span class="settings-label" style="color:#ffffff;">Тёмная тема</span><div class="theme-switch" id="themeSwitch"></div></div>
+            <div class="settings-row"><span class="settings-label" style="color:#ffffff;">Валюта</span><select id="currencySelect" class="currency-select"><option value="BYN">BYN</option><option value="USD">USD</option><option value="EUR">EUR</option></select></div>
+            <div class="settings-row"><span class="settings-label" style="color:#ffffff;">Сменить PIN-код</span><button class="btn-primary btn-small" id="changePinBtn">Сменить</button></div>
+            <div class="settings-row"><span class="settings-label" style="color:#ffffff;">Выйти</span><button class="btn-secondary btn-small" id="logoutBtn">Выйти</button></div></div>`;
+        document.getElementById('backBankBtn').onclick = () => renderMainBank();
+        document.getElementById('themeSwitch').onclick = () => document.body.classList.toggle('light');
+        document.getElementById('currencySelect').value = currentCurrency;
+        document.getElementById('currencySelect').onchange = (e) => { currentCurrency = e.target.value; renderMainBank(); };
+        document.getElementById('changePinBtn').onclick = () => { showChangePinFlow(); };
+        document.getElementById('logoutBtn').onclick = () => { logout(); renderWelcome(); };
+    }
+    
+    function showHistoryPanel() {
+        document.getElementById('app').innerHTML = `<div class="glass-card fade-in"><div class="bank-header"><div class="menu-icon-btn" id="backBankBtn">←</div></div><h3 style="color:#ffffff; text-align:center;">История операций</h3><div class="history-list">${transactions.length===0?'<div style="color:#ffffff; text-align:center; padding:2rem;">Нет операций</div>':transactions.map(t=>`<div class="history-item" style="color:#ffffff;"><strong>${t.type}</strong> ${t.amount} BYN<br><small>${t.details}</small><br><span style="font-size:0.6rem;">${t.date}</span></div>`).join('')}</div></div>`;
+        document.getElementById('backBankBtn').onclick = () => renderMainBank();
+    }
+    
+    function requestPinForCardDetails() {
+        const modal = document.createElement('div'); modal.className = 'modal-overlay';
+        modal.innerHTML = `<div class="modal-content"><h3 style="color:#ffffff;">Введите PIN-код</h3><input type="password" id="pinInput" maxlength="4" placeholder="****" style="text-align:center; font-size:1.5rem;"><div class="two-buttons"><button class="btn-primary" id="submitPin">Подтвердить</button><button class="btn-secondary" id="cancelPin">Отмена</button></div></div>`;
+        document.body.appendChild(modal);
+        document.getElementById('submitPin').onclick = () => {
+            const enteredPin = document.getElementById('pinInput').value;
+            if(enteredPin === currentUser.pinCode) {
+                modal.remove();
+                showStyledResult(true, 'Проверка пройдена', () => {
+                    document.getElementById('app').innerHTML = `<div class="glass-card fade-in"><div class="bank-header"><div class="menu-icon-btn" id="backBankBtn">←</div></div><h3 style="color:#ffffff;">Данные карты</h3><div style="margin-top:1rem;"><p style="color:#ffffff;"><strong>Номер:</strong> ${currentUser.cardNumber}</p><p style="color:#ffffff;"><strong>Срок:</strong> ${currentUser.expiry}</p><p style="color:#ffffff;"><strong>CVV:</strong> ${currentUser.cvv}</p><p style="color:#ffffff;"><strong>PIN:</strong> ****</p></div></div>`;
+                    document.getElementById('backBankBtn').onclick = () => renderMainBank();
+                });
+            } else {
+                modal.remove();
+                showStyledResult(false, 'Неверный PIN');
+            }
+        };
+        document.getElementById('cancelPin').onclick = () => modal.remove();
+    }
+    
+    function showChangePinFlow() {
+        const modal = document.createElement('div'); modal.className = 'modal-overlay';
+        modal.innerHTML = `<div class="modal-content"><h3 style="color:#ffffff;">Смена PIN</h3><input type="password" id="oldPin" placeholder="Старый PIN"><input type="password" id="newPin" placeholder="Новый PIN (4 цифры)"><input type="password" id="confirmPin" placeholder="Подтвердите"><div class="two-buttons"><button class="btn-primary" id="savePinBtn">Сохранить</button><button class="btn-secondary" id="cancelPin">Отмена</button></div></div>`;
+        document.body.appendChild(modal);
+        document.getElementById('savePinBtn').onclick = () => {
+            const old = document.getElementById('oldPin').value;
+            const newPin = document.getElementById('newPin').value;
+            const conf = document.getElementById('confirmPin').value;
+            if(old !== currentUser.pinCode) { showStyledResult(false, 'Неверный старый PIN'); modal.remove(); return; }
+            if(!/^\d{4}$/.test(newPin)) { showStyledResult(false, 'PIN 4 цифры'); modal.remove(); return; }
+            if(newPin !== conf) { showStyledResult(false, 'PIN не совпадают'); modal.remove(); return; }
+            modal.remove();
+            const loadModal = document.createElement('div'); loadModal.className = 'modal-overlay';
+            loadModal.innerHTML = `<div class="modal-content"><div class="spinner"></div><p style="color:#ffffff;">Обновляем PIN...</p></div>`;
+            document.body.appendChild(loadModal);
+            setTimeout(() => {
+                loadModal.innerHTML = `<div class="modal-content"><div class="check-animation"><svg viewBox="0 0 60 60"><circle class="check-circle" cx="30" cy="30" r="28" stroke="#2affdf" stroke-width="2"/><path class="check-mark" d="M20 30 L28 38 L42 22" stroke="#2affdf" stroke-width="3"/></svg></div><p style="color:#2affdf;">PIN изменён!</p></div>`;
+                currentUser.pinCode = newPin;
+                saveCurrentUser();
+                setTimeout(() => { loadModal.remove(); renderMainBank(); }, 1500);
+            }, 1500);
+        };
+        document.getElementById('cancelPin').onclick = () => modal.remove();
+    }
+    
+    function showTransferModal() {
+        const modal = document.createElement('div'); modal.className = 'modal-overlay';
+        modal.innerHTML = `<div class="modal-content"><h3 style="color:#ffffff;">Перевод</h3><input id="targetCard" placeholder="Номер карты (16 цифр)" maxlength="19"><input id="amount" type="number" placeholder="Сумма в BYN"><div class="two-buttons"><button class="btn-primary" id="confirmTransfer">Перевести</button><button class="btn-secondary" id="cancelModal">Отмена</button></div></div>`;
+        document.body.appendChild(modal);
+        const cardInput = document.getElementById('targetCard');
+        cardInput.addEventListener('input', function(e) { let val = e.target.value.replace(/\s/g, '').slice(0,16); e.target.value = val.match(/.{1,4}/g)?.join(' ') || val; });
+        document.getElementById('confirmTransfer').onclick = () => {
+            let rawCard = document.getElementById('targetCard').value.replace(/\s/g, '');
+            let amount = parseFloat(document.getElementById('amount').value);
+            if(rawCard.length !== 16 || isNaN(amount) || amount <= 0) { showStyledResult(false, 'Неверные данные'); modal.remove(); return; }
+            if(!rawCard.startsWith('9')) { showStyledResult(false, 'Карта должна начинаться на 9'); modal.remove(); return; }
+            if(currentUser.balance < amount) { showStyledResult(false, 'Недостаточно средств'); modal.remove(); return; }
+            if(rawCard === currentUser.rawNumber) { showStyledResult(false, 'Нельзя себе'); modal.remove(); return; }
+            let targetUser = allUsers.find(u => u.rawNumber === rawCard);
+            if(!targetUser) { showStyledResult(false, 'Карта не найдена'); modal.remove(); return; }
+            currentUser.balance -= amount;
+            targetUser.balance += amount;
+            saveCurrentUser();
+            saveAllUsers();
+            addTransaction('Перевод', -amount, `Перевод на карту ${rawCard.slice(-4)}`);
+            let targetTx = JSON.parse(localStorage.getItem(`webpay_tx_${targetUser.rawNumber}`) || '[]');
+            targetTx.unshift({ type: 'Получение', amount: amount, details: `Получено с карты ${currentUser.rawNumber.slice(-4)}`, date: new Date().toLocaleString() });
+            localStorage.setItem(`webpay_tx_${targetUser.rawNumber}`, JSON.stringify(targetTx));
+            modal.remove();
+            showStyledResult(true, `Переведено ${amount} BYN`, () => renderMainBank());
+        };
+        document.getElementById('cancelModal').onclick = () => modal.remove();
+    }
+    
+    function showGooglePayModal() {
+        let selectedCrypto = 'USDT';
+        let amountCrypto = 0;
+        const modal = document.createElement('div'); modal.className = 'modal-overlay';
+        modal.innerHTML = `<div class="modal-content"><h3 style="color:#ffffff;">Пополнение</h3><select id="cryptoSelect">${cryptoList.map(c => `<option value="${c}">${c} ($${cryptoPrices[c]})</option>`).join('')}</select><input type="number" id="cryptoAmount" placeholder="Количество"><div class="two-buttons"><button class="btn-primary" id="nextGpBtn">Далее</button><button class="btn-secondary" id="cancelModal">Отмена</button></div></div>`;
+        document.body.appendChild(modal);
+        document.getElementById('nextGpBtn').onclick = () => {
+            selectedCrypto = document.getElementById('cryptoSelect').value;
+            amountCrypto = parseFloat(document.getElementById('cryptoAmount').value);
+            if(isNaN(amountCrypto) || amountCrypto <= 0) { showStyledResult(false, 'Введите сумму'); modal.remove(); return; }
+            const usdAmount = amountCrypto * cryptoPrices[selectedCrypto];
+            modal.remove();
+            const gpModal = document.createElement('div'); gpModal.className = 'gp-modal';
+            gpModal.innerHTML = `<div style="display:flex; justify-content:center; margin-bottom:1rem;"><img src="https://www.gstatic.com/pay/acceptance/images/product/pay_with_google.png" style="height:30px;" alt="GP"></div><div class="gp-amount">${amountCrypto} ${selectedCrypto}</div><div>на сумму</div><div class="gp-amount">$${usdAmount.toFixed(2)} USD</div><button class="gp-btn" id="confirmGpBuy">Купить в один клик</button><button id="closeGp" style="margin-top:1rem; background:none; border:none; color:#666;">Отмена</button></div>`;
+            document.body.appendChild(gpModal);
+            document.getElementById('confirmGpBuy').onclick = () => {
+                gpModal.innerHTML = `<div style="display:flex; justify-content:center; margin-bottom:1rem;"><img src="https://www.gstatic.com/pay/acceptance/images/product/pay_with_google.png" style="height:30px;" alt="GP"></div><div class="spinner" style="width:40px; height:40px;"></div><div>Обработка платежа...</div>`;
+                setTimeout(() => {
+                    gpModal.innerHTML = `<div style="display:flex; justify-content:center; margin-bottom:1rem;"><img src="https://www.gstatic.com/pay/acceptance/images/product/pay_with_google.png" style="height:30px;" alt="GP"></div><div class="check-animation" style="width:50px; height:50px;"><svg viewBox="0 0 60 60"><circle class="check-circle" cx="30" cy="30" r="28" stroke="#2affdf" stroke-width="2"/><path class="check-mark" d="M20 30 L28 38 L42 22" stroke="#2affdf" stroke-width="3"/></svg></div><div>Оплата прошла успешно!</div>`;
+                    const bynAmount = usdAmount * exchangeRates.USD;
+                    currentUser.balance += bynAmount;
+                    saveCurrentUser();
+                    addTransaction('Пополнение', bynAmount, `Покупка ${amountCrypto} ${selectedCrypto}`);
+                    setTimeout(() => { gpModal.remove(); renderMainBank(); }, 1500);
+                }, 2000);
+            };
+            document.getElementById('closeGp').onclick = () => gpModal.remove();
+        };
+        document.getElementById('cancelModal').onclick = () => modal.remove();
+    }
+    
+    // ======================== ИМПОРТ КАРТЫ ========================
+    function renderImportStep1() {
+        document.getElementById('app').innerHTML = `<div class="glass-card fade-in"><div class="logo"><h1>WebPay</h1></div><div style="text-align:center"><div class="step-badge">импорт карты</div><div class="step-title">Введите данные карты</div></div><div class="form-group"><label>Номер карты</label><input type="text" id="cardNumber" placeholder="0000 0000 0000 0000"><div id="cardNumberErr" class="error-message"></div></div><div class="form-group"><label>Срок действия (MM/YY)</label><input type="text" id="expiry" placeholder="12/28"><div id="expiryErr" class="error-message"></div></div><div class="form-group"><label>ID паспорта Восьмилапка Сити</label><input type="text" id="passportId" placeholder="VH000000X"><div id="passportIdErr" class="error-message"></div></div><div class="buttons-row"><button class="btn-secondary" id="backToChoice">Назад</button><button class="btn-primary" id="importBtn">Импортировать</button></div></div>`;
+        const cardNum = document.getElementById('cardNumber'); const expiry = document.getElementById('expiry'); const passportId = document.getElementById('passportId'); const importBtn = document.getElementById('importBtn');
+        cardNum.addEventListener('input', function(e) { let val = e.target.value.replace(/\s/g, '').slice(0,16); e.target.value = val.match(/.{1,4}/g)?.join(' ') || val; validateForm(); });
+        function validateForm() { let raw = cardNum.value.replace(/\s/g,''); let valid=true; if(!raw || raw.length!==16 || !raw.startsWith('9')) { document.getElementById('cardNumberErr').innerText='Карта должна начинаться на 9'; valid=false; } else document.getElementById('cardNumberErr').innerText=''; if(!expiry.value.match(/^\d{2}\/\d{2}$/)) { document.getElementById('expiryErr').innerText='Формат MM/YY'; valid=false; } else document.getElementById('expiryErr').innerText=''; if(!passportId.value.match(/^VH[A-Z0-9]{6,7}$/i)) { document.getElementById('passportIdErr').innerText='Формат VH000000X'; valid=false; } else document.getElementById('passportIdErr').innerText=''; importBtn.disabled=!valid; if(valid) window.importRawCard = raw; }
+        expiry.addEventListener('input',validateForm); passportId.addEventListener('input',validateForm); validateForm();
+        document.getElementById('backToChoice').onclick = () => renderChoice();
+        importBtn.onclick = () => { if(!importBtn.disabled) { let found = allUsers.find(u => u.rawNumber === window.importRawCard); if(found) { currentUser = found; isLoggedIn = true; saveCurrentUser(); loadTransactions(); showAnimatedImportLoading(); } else { showStyledResult(false, 'Карта не найдена'); } } };
+    }
+    function showAnimatedImportLoading() { const modalDiv = document.createElement('div'); modalDiv.className = 'modal-overlay'; modalDiv.innerHTML = `<div class="modal-content" id="animatedModal"><div class="spinner" id="finalSpinner"></div><p id="loadingText" style="color:#ffffff;">Импортируем карту...</p></div>`; document.body.appendChild(modalDiv); setTimeout(() => { const spinner = document.getElementById('finalSpinner'); if(spinner) { spinner.style.animation = 'none'; spinner.style.border = 'none'; spinner.innerHTML = `<div class="check-animation"><svg viewBox="0 0 60 60"><circle class="check-circle" cx="30" cy="30" r="28" stroke="#2affdf" stroke-width="2"/><path class="check-mark" d="M20 30 L28 38 L42 22" stroke="#2affdf" stroke-width="3"/></svg></div>`; document.getElementById('loadingText').innerText = 'Карта импортирована!'; setTimeout(() => { modalDiv.remove(); renderMainBank(); }, 1500); } }, 1500); }
+    
+    // ======================== ЭКРАН ВЫБОРА ========================
+    function renderChoice() { document.getElementById('app').innerHTML = `<div class="glass-card fade-in"><div class="logo"><h1>WebPay</h1><div class="logo-sub">выберите действие</div></div><div class="actions-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;"><div class="action-card" id="importBtnChoice"><div class="neon-icon"><svg width="45" viewBox="0 0 100 100"><rect x="20" y="40" width="45" height="28" rx="5" stroke="#2affdf" stroke-width="1.8" fill="none"/><path d="M65 52 L78 52 L78 48 L85 55 L78 62 L78 58 L65 58" fill="#2affdf"/></svg></div><div class="action-title">Импортировать карту</div><div class="action-desc">Перенесите существующий кошелёк</div></div><div class="action-card" id="createBtnChoice"><div class="neon-icon"><svg width="45" viewBox="0 0 100 100"><rect x="25" y="35" width="45" height="32" rx="6" stroke="#0ff" stroke-width="1.8" fill="none"/><path d="M52 48 L52 40 L60 48 L52 48Z" fill="#0ff"/></svg></div><div class="action-title">Создать новый кошелёк</div><div class="action-desc">Начните с нуля</div></div></div></div>`;
+        document.getElementById('importBtnChoice').onclick = () => renderImportStep1();
+        document.getElementById('createBtnChoice').onclick = () => { userData = { firstName: '', lastName: '', patronymic: '', birthDate: '', city: '', address: '', passportCode: '', issueDate: '', expiryDate: '', passportPhoto: null, agreeTerms: false, cardColor: 'grad1', tariff: 'A', consents: { insurance: false, marketing: false, cardIssue: false }, pinCode: '' }; renderStep1(); };
+    }
+    
+    // ======================== СОЗДАНИЕ НОВОГО КОШЕЛЬКА ========================
+    function renderWelcome() { document.getElementById('app').innerHTML = `<div class="glass-card fade-in"><div class="logo"><h1>WebPay</h1><div class="logo-sub">крипто-кошелёк</div></div><div class="btn-start-wrapper" style="display:flex; justify-content:center;"><button class="btn-primary" id="startBtn" style="padding:0.8rem 2rem; font-size:1.2rem;">Начать</button></div></div>`; document.getElementById('startBtn').onclick = () => renderChoice(); }
+    function renderStep1() { const fields = ['firstName','lastName','patronymic','birthDate','city','address']; const labels = ['Имя','Фамилия','Отчество','Дата рождения','Город','Адрес']; const types = ['text','text','text','date','text','text']; let html = `<div class="glass-card fade-in"><div class="logo"><h1>WebPay</h1></div><div style="text-align:center"><div class="step-badge">шаг 1/4</div><div class="step-title">Личные данные</div></div>`; fields.forEach((f,i)=> { html += `<div class="form-group"><label>${labels[i]}${f!=='patronymic'?' *':''}</label><input type="${types[i]}" id="${f}" value="${escapeHtml(userData[f])}"><div id="${f}Err" class="error-message"></div></div>`; }); html += `<div class="buttons-row"><button class="btn-secondary" id="backChoice">Назад</button><button class="btn-primary" id="nextStep1">Далее</button></div></div>`; document.getElementById('app').innerHTML = html; const validators = [v=>v.trim()?'':'Имя обязательно', v=>v.trim()?'':'Фамилия обязательна', v=>v.trim() && v.length<2?'Минимум 2':'', v=>{if(!v) return 'Дата'; let d=new Date(v); if(isNaN(d)) return 'Дата'; let age=new Date().getFullYear()-d.getFullYear(); return age<18?'18 лет':'';}, v=>v.trim()?'':'Город', v=>v.trim().length>4?'':'Адрес полный']; function validateAll() { let ok=true; fields.forEach((f,i)=>{ const val=document.getElementById(f).value; const err=validators[i](val); document.getElementById(`${f}Err`).innerText=err; if(err) ok=false; userData[f]=val; }); document.getElementById('nextStep1').disabled=!ok; } fields.forEach(f=>document.getElementById(f).addEventListener('input',validateAll)); validateAll(); document.getElementById('backChoice').onclick = ()=>renderChoice(); document.getElementById('nextStep1').onclick = ()=> { if(!document.getElementById('nextStep1').disabled) renderStep2(); }; }
+    function renderStep2() { document.getElementById('app').innerHTML = `<div class="glass-card fade-in"><div class="logo"><h1>WebPay</h1></div><div style="text-align:center"><div class="step-badge">шаг 2/4</div><div class="step-title">Паспортные данные</div></div><div class="form-group"><label>Страна</label><div style="background:rgba(2,8,18,0.7); border-radius:1.2rem; padding:0.8rem; display:flex; align-items:center; gap:8px;"><span style="background:linear-gradient(135deg,#fff 50%,#ff8c42 50%); width:24px; height:16px; display:inline-block; border-radius:3px;"></span><span style="color:#ffffff;">Восьмилапка Сити (VS)</span></div></div><div class="form-group"><label>Код паспорта (VH000000X)</label><input type="text" id="passportCode" value="${userData.passportCode}"><div id="passportCodeErr" class="error-message"></div></div><div class="form-group"><label>Дата выдачи</label><input type="date" id="issueDate" value="${userData.issueDate}"><div id="issueDateErr" class="error-message"></div></div><div class="form-group"><label>Дата окончания</label><input type="date" id="expiryDate" value="${userData.expiryDate}"><div id="expiryDateErr" class="error-message"></div></div><div class="form-group"><label>Фото паспорта</label><div id="photoUpload" style="border:1px dashed #2affdf; border-radius:1.2rem; padding:0.7rem; text-align:center; cursor:pointer; color:#ffffff;">📄 Загрузить фото</div><input type="file" id="photoInput" accept="image/*" style="display:none"><div id="photoErr" class="error-message"></div><div id="photoName" style="font-size:0.7rem; color:#bbd4ff;"></div></div><div class="checkbox-group"><input type="checkbox" id="agreeTerms" ${userData.agreeTerms?'checked':''}><label>Согласие на обработку данных</label></div><div class="buttons-row"><button class="btn-secondary" id="backStep1">Назад</button><button class="btn-primary" id="nextStep2">Далее</button></div></div>`; let photoFile = userData.passportPhoto; document.getElementById('photoUpload').onclick = ()=>document.getElementById('photoInput').click(); document.getElementById('photoInput').onchange = e=>{ if(e.target.files[0]){ photoFile=e.target.files[0]; document.getElementById('photoName').innerText=e.target.files[0].name; validate(); } }; function validate() { const passErr = /^VH[A-Z0-9]{6,7}$/i.test(document.getElementById('passportCode').value)?'':'Формат VH000000X'; const issueErr = document.getElementById('issueDate').value?'':'Дата выдачи'; const expiryErr = document.getElementById('expiryDate').value?'':'Дата окончания'; const photoErr = photoFile?'':'Загрузите фото'; document.getElementById('passportCodeErr').innerText=passErr; document.getElementById('issueDateErr').innerText=issueErr; document.getElementById('expiryDateErr').innerText=expiryErr; document.getElementById('photoErr').innerText=photoErr; const ok = !passErr && !issueErr && !expiryErr && !photoErr && document.getElementById('agreeTerms').checked; document.getElementById('nextStep2').disabled=!ok; if(ok){ userData.passportCode=document.getElementById('passportCode').value; userData.issueDate=document.getElementById('issueDate').value; userData.expiryDate=document.getElementById('expiryDate').value; userData.agreeTerms=true; userData.passportPhoto=photoFile; } } document.getElementById('passportCode').addEventListener('input',validate); document.getElementById('issueDate').addEventListener('input',validate); document.getElementById('expiryDate').addEventListener('input',validate); document.getElementById('agreeTerms').addEventListener('change',validate); validate(); document.getElementById('backStep1').onclick = ()=>renderStep1(); document.getElementById('nextStep2').onclick = ()=> { if(!document.getElementById('nextStep2').disabled) { const modalDiv=document.createElement('div'); modalDiv.className='modal-overlay'; modalDiv.innerHTML=`<div class="modal-content"><div class="spinner"></div><p style="color:#ffffff;">Проходим верификацию...</p></div>`; document.body.appendChild(modalDiv); setTimeout(()=>{ modalDiv.remove(); renderStep3(); },2000); } }; }
+    function renderStep3() { const gradientsLoc = { grad1: 'linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d)', grad2: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)', grad3: 'linear-gradient(135deg, #42275a, #734b6d)', grad4: 'linear-gradient(135deg, #232526, #414345)', grad5: 'linear-gradient(135deg, #3a1c71, #d76d77, #ffaf7b)', grad6: 'linear-gradient(135deg, #00b4db, #0083b0)' }; document.getElementById('app').innerHTML = `<div class="glass-card fade-in"><div class="logo"><h1>WebPay</h1></div><div style="text-align:center"><div class="step-badge">шаг 3/4</div><div class="step-title">Оформление карты</div></div><div id="cardPreview" class="card-preview" style="background:${gradientsLoc[userData.cardColor] || gradientsLoc.grad1}"><div class="card-header"><div style="font-size:0.7rem; color:#ffffff;">WebPay</div><div class="card-tariff" id="cardTariffLabel" style="color:#ffffff;">${userData.tariff}</div></div><div class="card-number" style="color:#ffffff;">0000 0000 0000 0000</div><div class="card-expiry" style="color:#ffffff;">Срок: 00/00</div></div><div class="color-palette">${Object.keys(gradientsLoc).map(g=>`<div class="color-circle" data-color="${g}" style="background:${gradientsLoc[g]}"></div>`).join('')}</div><div class="tariff-buttons">${['A','A+','B','B+','D','D+'].map(t=>`<div class="tariff-btn ${userData.tariff===t?'active':''}" data-tariff="${t}">${t}</div>`).join('')}</div><div class="checkbox-group"><input type="checkbox" id="consentIssue" ${userData.consents.cardIssue?'checked':''}><label>Согласие на выпуск и обслуживание карты</label></div><div class="checkbox-group"><input type="checkbox" id="consentInsurance" ${userData.consents.insurance?'checked':''}><label>Страхование средств (опционально)</label></div><div class="checkbox-group"><input type="checkbox" id="consentMarketing" ${userData.consents.marketing?'checked':''}><label>Получать маркетинговые уведомления</label></div><div class="buttons-row"><button class="btn-secondary" id="backStep2">Назад</button><button class="btn-primary" id="nextStep3">Далее</button></div></div>`; document.querySelectorAll('.color-circle').forEach(c=>c.addEventListener('click',()=>{ userData.cardColor=c.dataset.color; document.getElementById('cardPreview').style.background=gradientsLoc[userData.cardColor]; })); document.querySelectorAll('.tariff-btn').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.tariff-btn').forEach(bb=>bb.classList.remove('active')); b.classList.add('active'); userData.tariff=b.dataset.tariff; document.getElementById('cardTariffLabel').innerText=userData.tariff; })); document.getElementById('consentIssue').onchange=e=>userData.consents.cardIssue=e.target.checked; document.getElementById('consentInsurance').onchange=e=>userData.consents.insurance=e.target.checked; document.getElementById('consentMarketing').onchange=e=>userData.consents.marketing=e.target.checked; document.getElementById('backStep2').onclick = ()=>renderStep2(); document.getElementById('nextStep3').onclick = ()=>{ if(userData.consents.cardIssue) renderStep4(); else showStyledResult(false, 'Согласие обязательно'); }; }
+    function renderStep4() { document.getElementById('app').innerHTML = `<div class="glass-card fade-in"><div class="logo"><h1>WebPay</h1></div><div style="text-align:center"><div class="step-badge">шаг 4/4</div><div class="step-title">Установка PIN-кода</div></div><div class="form-group"><label>Введите PIN-код (4 цифры)</label><input type="password" id="pin1" maxlength="4" inputmode="numeric"></div><div class="form-group"><label>Подтвердите PIN-код</label><input type="password" id="pin2" maxlength="4" inputmode="numeric"></div><div id="pinError" class="error-message"></div><div class="buttons-row"><button class="btn-secondary" id="backStep3">Назад</button><button class="btn-primary" id="finishBtn">Завершить</button></div></div>`; const pin1=document.getElementById('pin1'), pin2=document.getElementById('pin2'), finishBtn=document.getElementById('finishBtn'); function validatePin(){ const p1=pin1.value, p2=pin2.value; if(p1.length===4 && p2.length===4 && p1===p2 && /^\d{4}$/.test(p1)){ document.getElementById('pinError').innerText=''; finishBtn.disabled=false; userData.pinCode=p1; } else { document.getElementById('pinError').innerText=p1.length!==4?'4 цифры':'PIN не совпадают'; finishBtn.disabled=true; } } pin1.addEventListener('input',validatePin); pin2.addEventListener('input',validatePin); document.getElementById('backStep3').onclick = ()=>renderStep3(); finishBtn.onclick = () => { if(!finishBtn.disabled) showAnimatedFinalLoading(); }; }
+    function showAnimatedFinalLoading() { const modalDiv = document.createElement('div'); modalDiv.className = 'modal-overlay'; modalDiv.innerHTML = `<div class="modal-content" id="animatedModal"><div class="spinner" id="finalSpinner"></div><p id="loadingText" style="color:#ffffff;">Готовим вашу карту...</p></div>`; document.body.appendChild(modalDiv); setTimeout(() => { const textEl = document.getElementById('loadingText'); if(textEl) textEl.innerText = 'Отправка информации в банк...'; setTimeout(() => { const spinner = document.getElementById('finalSpinner'); if(spinner) { spinner.style.animation = 'none'; spinner.style.border = 'none'; spinner.innerHTML = `<div class="check-animation"><svg viewBox="0 0 60 60" fill="none"><circle class="check-circle" cx="30" cy="30" r="28" stroke="#2affdf" stroke-width="2"/><path class="check-mark" d="M20 30 L28 38 L42 22" stroke="#2affdf" stroke-width="3" stroke-linecap="round"/></svg></div>`; const modalContent = document.querySelector('#animatedModal .modal-content'); if(modalContent) { const successText = document.createElement('p'); successText.innerText = 'Готово! Карта успешно изготовлена.'; successText.style.color = '#2affdf'; successText.style.marginTop = '1rem'; modalContent.appendChild(successText); } setTimeout(() => { modalDiv.remove(); finalizeCreation(); }, 1500); } }, 2000); }, 2000); }
+    function finalizeCreation() { currentUser = generateNewCard(userData.firstName || 'User', userData.tariff, userData.cardColor); currentUser.pinCode = userData.pinCode; allUsers.push(currentUser); saveAllUsers(); isLoggedIn = true; saveCurrentUser(); loadTransactions(); renderMainBank(); }
+    
+    function logout() { currentUser = null; isLoggedIn = false; localStorage.removeItem('webpay_user'); renderWelcome(); }
+    
+    function validateFirstName(v) { let t=v.trim(); if(!t) return 'Имя обязательно'; if(t.length<2) return 'Минимум 2 буквы'; return ''; }
+    function validateLastName(v) { let t=v.trim(); if(!t) return 'Фамилия обязательна'; if(t.length<2) return 'Минимум 2 буквы'; return ''; }
+    function validatePatronymic(v) { let t=v.trim(); if(t && t.length<2) return 'Минимум 2 буквы'; return ''; }
+    function validateBirthDate(v) { if(!v) return 'Дата рождения обязательна'; let d=new Date(v); if(isNaN(d)) return 'Некорректная дата'; let age=new Date().getFullYear()-d.getFullYear(); if(age<18) return 'Минимум 18 лет'; return ''; }
+    function validateCity(v) { return v.trim()? '':'Город обязателен'; }
+    function validateAddress(v) { return v.trim().length>4? '':'Укажите полный адрес'; }
+    function validatePassportCode(v) { return /^VH[A-Z0-9]{6,7}$/i.test(v)? '':'Формат: VH000000X'; }
+    function validateIssueDate(v) { return v?'':'Укажите дату выдачи'; }
+    function validateExpiryDate(v, issue) { if(!v) return 'Укажите дату окончания'; if(issue && new Date(v)<=new Date(issue)) return 'Позже даты выдачи'; return ''; }
+    
+    if(localStorage.getItem('webpay_theme') === 'light') document.body.classList.add('light');
+    new MutationObserver(() => localStorage.setItem('webpay_theme', document.body.classList.contains('light') ? 'light' : 'dark')).observe(document.body, {attributes: true, attributeFilter: ['class']});
+    
+    loadAllUsers();
+    const savedUser = localStorage.getItem('webpay_user');
+    if(savedUser) { currentUser = JSON.parse(savedUser); isLoggedIn = true; loadTransactions(); renderMainBank(); } 
+    else renderWelcome();
+</script>
+</body>
+</html>
